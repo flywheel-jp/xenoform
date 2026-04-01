@@ -1,0 +1,3 @@
+locals {
+  x = macro::pipeline()
+}
