@@ -128,4 +128,4 @@ See also `tests/success/all_features.in.tf` for a usage example.
   the variables cannot be resolved from the call site.
 
 
-Main developper : @skirino
+Main developper : [@skirino](https://github.com/skirino)
