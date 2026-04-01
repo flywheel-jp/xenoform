@@ -1,0 +1,11 @@
+[package]
+name = "xenoform"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+hcl-edit = "0.9.5"
+
+[[bin]]
+name = "xenoform"
+path = "main.rs"
