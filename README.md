@@ -1,6 +1,6 @@
 # Xenoform 
 
-This directory contains a rust program that converts a superset of
+Rust cli tool that converts a superset of
 the original terraform syntax (`.in.tf`) into the normal terraform code (`.tf`).
 
 
@@ -128,4 +128,4 @@ See also `tests/success/all_features.in.tf` for a usage example.
   the variables cannot be resolved from the call site.
 
 
-Main developper : [@skirino](https://github.com/skirino)
+Main developer : [@skirino](https://github.com/skirino)
