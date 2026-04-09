@@ -22,7 +22,7 @@ success \
   --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" \
   --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf" \
   "$(dirname "$0")/success/all_features.in.tf"
-success "$(dirname "$0")/success/nested_macro_expansions/macro_within_traversal.in.tf"
+success "$(dirname "$0")/success/macro_expansion/macro_within_traversal.in.tf"
 
 function error() {
   local expected_error_message="$1"

@@ -3,5 +3,5 @@ macro "foo" "x" {
 }
 
 locals {
-  a = macro::foo({ a = macro::foo(1) }.a)
+  a = { a = macro::foo(1) }.a
 }
