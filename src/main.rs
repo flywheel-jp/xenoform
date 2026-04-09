@@ -366,7 +366,7 @@ impl VisitMut for Converter {
                     ),
                 }
             }
-            _ => (),
+            _ => visit_mut::visit_traversal_mut(self, node),
         }
     }
 

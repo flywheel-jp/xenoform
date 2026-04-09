@@ -4,16 +4,11 @@ set -euo pipefail -o posix
 : "${XENOFORM_BIN:?}"
 
 function success() {
-  local basename="$1"
+  local path="${@: -1}"
   local out
-  out=$(
-    "${XENOFORM_BIN}" \
-      --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" \
-      --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf" \
-      "$(dirname "$0")/success/${basename}"
-  )
+  out=$("${XENOFORM_BIN}" "$@")
   local expected
-  expected=$(cat "$(dirname "$0")/success/${basename/%.in.tf/.tf}")
+  expected=$(cat "${path/%.in.tf/.tf}")
   if [[ "${out}" != "${expected}" ]]; then
     echo 'Unexpected output. Diff:'
     echo '----------'
@@ -22,6 +17,12 @@ function success() {
     exit 1
   fi
 }
+
+success \
+  --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" \
+  --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf" \
+  "$(dirname "$0")/success/all_features.in.tf"
+success "$(dirname "$0")/success/nested_macro_expansions/macro_within_traversal.in.tf"
 
 function error() {
   local expected_error_message="$1"
@@ -39,7 +40,6 @@ function error() {
   fi
 }
 
-success all_features.in.tf
 error '^Filename argument required\.$'
 error '^Failed to read .*$' "$(dirname "$0")/error/nonexisting_file.in.tf"
 error '^Failed to parse .* as HCL2\.$' "$(dirname "$0")/error/non_hcl2.in.tf"
@@ -67,3 +67,5 @@ error '^Failed to read .* \(given as a macro prelude\)\.$' '--macro-prelude' "$(
 error '^Failed to parse .* as HCL2 \(given as a macro prelude\)\.$' '--macro-prelude' "$(dirname "$0")/error/non_hcl2.in.tf" "$(dirname "$0")/success/all_features.in.tf"
 error "^Exactly 1 label is expected for 'assert' block\.$" "$(dirname "$0")/error/assert_too_many_labels.in.tf"
 error "^Attribute 'condition' must be given to 'assert' block\.$" "$(dirname "$0")/error/assert_missing_condition_attribute.in.tf"
+
+echo 'Succesfully finished all tests.'
