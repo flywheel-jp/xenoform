@@ -13,8 +13,8 @@ use hcl_edit::expr::{
 };
 use hcl_edit::structure::{Attribute, Block, BlockLabel, Body};
 use hcl_edit::template::{Element, Interpolation, StringTemplate};
-use hcl_edit::visit_mut::{visit_block_mut, visit_expr_mut, VisitMut};
-use hcl_edit::{Decor, Decorate, Decorated, Ident};
+use hcl_edit::visit_mut::VisitMut;
+use hcl_edit::{Decor, Decorate, Decorated, Ident, visit_mut};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
@@ -83,7 +83,7 @@ impl VisitMut for VarExpand<'_, '_> {
             Expression::Variable(ident) if ident.as_str() == self.var_name => {
                 *expr = wrap_with_paren(self.var_expr.to_owned())
             }
-            _ => visit_expr_mut(self, expr),
+            _ => visit_mut::visit_expr_mut(self, expr),
         }
     }
 }
@@ -328,7 +328,7 @@ impl VisitMut for Converter {
             _ => (),
         }
         // Continue tree visiting to handle other parts of AST
-        visit_block_mut(self, node);
+        visit_mut::visit_block_mut(self, node);
         // Forget about the entries in blocals block (if any)
         self.blocals.clear();
     }
@@ -396,11 +396,13 @@ impl VisitMut for Converter {
                         );
                         *expr = macro_def.expand(macro_name, call.args.iter().collect::<Vec<_>>());
                     }
+                    visit_mut::visit_expr_mut(self, expr);
                 }
-                _ => (),
+                _ => visit_mut::visit_func_call_mut(self, call),
             }
+        } else {
+            visit_mut::visit_expr_mut(self, expr);
         }
-        visit_expr_mut(self, expr);
     }
 }
 
