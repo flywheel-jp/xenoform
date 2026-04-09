@@ -1,8 +1,8 @@
 # Xenoform
 
-Xenoform is a preprocessor for [terraform](https://developer.hashicorp.com/terraform) code.
-By introducing some syntax extensions (explained below), xenoform provides better developer
-experience for your terraform projects.
+Xenoform is a preprocessor for [terraform](https://developer.hashicorp.com/terraform) (or
+[OpenTofu](https://opentofu.org)). By introducing some syntax extensions (explained below),
+xenoform provides better developer experience for your terraform projects.
 
 Xenoform syntax is a superset of the original terraform syntax (to be precise,
 [HCL2](https://github.com/hashicorp/hcl) syntax); input is converted into normal terraform
