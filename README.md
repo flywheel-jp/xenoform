@@ -1,8 +1,12 @@
-# Xenoform 
+# Xenoform
 
-Rust cli tool that converts a superset of
-the original terraform syntax (`.in.tf`) into the normal terraform code (`.tf`).
+Xenoform is a preprocessor for [terraform](https://developer.hashicorp.com/terraform) code.
+By introducing some syntax extensions (explained below), xenoform provides better developer
+experience for your terraform projects.
 
+Xenoform syntax is a superset of the original terraform syntax (to be precise,
+[HCL2](https://github.com/hashicorp/hcl) syntax); input is converted into normal terraform
+code. Thus it's fairly simple to introduce xenoform into your terraform workflow.
 
 ## Supported features and motivations
 
@@ -44,9 +48,10 @@ See also `tests/success/all_features.in.tf` for a usage example.
 - Motivation
   - Terraform does not support custom functions in the HCL2 source files.
     - [Provider-defined functions](https://developer.hashicorp.com/terraform/plugin/framework/functions/concepts)
-      is possible but is somewhat tedious to define small utilities in Go.
-    - Pure-HCL2 way to reuse an expression is to define a terraform module, but it's
-      syntactically heavy on the calling side.
+      is possible but it's somewhat tedious to define small utilities in Go.
+    - Pure-HCL2 way to reuse an expression is to define a
+      [terraform module](https://developer.hashicorp.com/terraform/tutorials/modules),
+      but it's syntactically heavy on the calling side.
 - Example
 
   ```tf
@@ -57,11 +62,11 @@ See also `tests/success/all_features.in.tf` for a usage example.
   }
 
   locals {
-    use_hoge = macro::hoge(5, 10) # expanded to `(5 + 1) * (10 + 2)`
+    use_hoge = macro::hoge(5, 10) # expanded to `((5 + 1) * (10 + 2))`
   }
   ```
 
-### Including macros defined in other `.in.tf` files
+### Including macros defined in other files
 
 - Include from code: By adding the following you can use macros defined in `another_file.in.tf`.
 
@@ -86,17 +91,18 @@ See also `tests/success/all_features.in.tf` for a usage example.
 
   ```tf
   locals {
-    # Expanded to [for x in concat([1, 2, 3], [4, 5]) : x + 1]
+    # Expanded to `join(", ", [for x in concat([1, 2, 3], [4, 5]) : x + 1])` with some extra whitespaces
     use_pipeline = macro::pipeline(
-      [1, 2, 3],            # 1st step (just an expression)
-      concat(_, [4, 5]),    # 2nd step (expression with a placeholder). `_` is replaced by the result of the 1st step
-      [for x in _ : x + 1], # 3rd step (expression with a placeholder). `_` is replaced by the result of the 2nd step
+      [1, 2, 3],            # 1st step (just an expression).
+      concat(_, [4, 5]),    # 2nd step (expression with a placeholder). `_` is replaced by the result of the 1st step.
+      [for x in _ : x + 1], # 3rd step (expression with a placeholder). `_` is replaced by the result of the 2nd step.
+      join(", ", _),        # Last step (expression with a placeholder). `_` is replaced by the result of the 3rd step.
     )
   }
   ```
 
 - Note: `pipeline` macro is a special macro and is implemented in the preprocessor layer,
-  instead of a macro defined in an `.in.tf` file. It takes arbitrary number of arguments (steps).
+  instead of a macro defined using `macro` block. It takes arbitrary number of arguments (steps).
 
 ### Assertion
 
@@ -104,16 +110,23 @@ See also `tests/success/all_features.in.tf` for a usage example.
   - Terraform does not directly support `assert` functionality in other languages.
     Validating if an expected precondition is met before executing plan/apply is useful
     for catching issues earlier.
+  - Terraform does offer multiple ways to [validate configurations](https://developer.hashicorp.com/terraform/language/validate),
+    but there's currently no support for assertions that (a) does not belong to a specific resource,
+    data source or module, and (b) raises an error before making any action.
+  - `assert` block is introduced to cover such needs.
 - Example:
 
   ```tf
   assert "string_not_equal" {
-    condition = "an expression" != "that evaluates to true"
+    condition = "an expression that should" == "evaluate to true but actually false"
   }
   ```
 
+  is expanded to a local and causes a plan-time error.
+
+
 - Note:
-  - The `assert` block is expanded to a `local` with a conditional (ternary) expression
+  - An `assert` block is expanded to a `locals` with a conditional (ternary) expression
     that raises an error only when the condition evaluates to `false`. To raise an error
     we use [`tobool()`](https://developer.hashicorp.com/terraform/language/functions/tobool)
     function (as a workaround), but the type conversion itself is not relevant; look into
@@ -121,11 +134,16 @@ See also `tests/success/all_features.in.tf` for a usage example.
 
 ## Caveats
 
-- Line numbers in terraform error messages could be different in the input `.in.tf` files.
 - Some of code editor features (e.g. language server protocol) for terraform won't work.
+- Xenoform outputs may contain extra parenthesis, whitespace and newline characters.
+  Xenoform itself does not try to prettify the output; when you want to remove extra
+  whitespaces use `terraform fmt`. It also means that line numbers are not preserved.
+  Be careful when you see line numbers in error/warning messages by terraform or other tools.
 - Macro bodies are expanded at call site. If a macro body contains variable references
   such as `local.foo` and `flocal.bar` and the macro resides in another directory/file,
   the variables cannot be resolved from the call site.
-
+- Code comments are basically preserved so that static code analysis tools can use them
+  (e.g. to suppress warnings of a tool). However, comments before xenoform-specific blocks
+  (`macro`, `blocals` and `assert`) are removed together with the blocks.
 
 Main developer : [@skirino](https://github.com/skirino)
