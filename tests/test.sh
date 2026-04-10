@@ -4,7 +4,7 @@ set -euo pipefail -o posix
 : "${XENOFORM_BIN:?}"
 
 function success() {
-  local path="${@: -1}"
+  local path="${*: -1}"
   local out
   out=$("${XENOFORM_BIN}" "$@")
   local expected
