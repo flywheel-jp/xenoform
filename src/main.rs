@@ -17,10 +17,26 @@ use hcl_edit::visit_mut::{self, VisitMut};
 use hcl_edit::{Decor, Decorate, Decorated, Ident};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
+use std::env;
 use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
+
+const HELP_MESSAGE: &str = "\
+Usage: xenoform [OPTION]... [TARGET_FILEPATH]
+
+Convert terraform source file containing xenoform syntax extensions into normal
+terraform code. The result is printed to STDOUT.
+
+See README.md for the supported syntax extensions.
+
+Options:
+  --macro-prelude file  File path to be included before processing the target file
+                        so that you can use macros defined in the preloaded file
+                        in the target file. You can include multiple files by
+                        repeating `--macro-prelude ${file}`.
+  -h, --help            Display this help message and exit.";
 
 //
 // utils
@@ -409,24 +425,36 @@ impl VisitMut for Converter {
 //
 // body of this binary
 //
-fn collect_target_and_macro_prelude_files() -> (String, Vec<String>) {
-    let mut args = std::env::args().skip(1); // drop 0th argument (executable path).
+fn collect_target_and_macro_prelude_files(args: Vec<String>) -> (String, Vec<String>) {
+    let mut args_iter = args.into_iter();
     let mut macro_prelude_files = Vec::new();
-    while let Some(arg) = args.next() {
+    let mut target_files = Vec::new();
+    while let Some(arg) = args_iter.next() {
         if arg == "--macro-prelude" {
-            let Some(file) = args.next() else {
+            let Some(file) = args_iter.next() else {
                 eprintln_exit!("No filename argument given after '--macro-prelude'.");
             };
             macro_prelude_files.push(file);
         } else {
-            return (arg, macro_prelude_files);
+            target_files.push(arg);
         }
     }
-    eprintln_exit!("Filename argument required.");
+    if target_files.len() == 0 {
+        eprintln_exit!("No input filename given.");
+    }
+    if target_files.len() >= 2 {
+        eprintln_exit!("Multiple input filenames provided: {:?}", target_files);
+    }
+    (target_files.into_iter().next().unwrap(), macro_prelude_files)
 }
 
 fn main() {
-    let (filename, macro_prelude_files) = collect_target_and_macro_prelude_files();
+    let args = env::args().skip(1).collect::<Vec<_>>(); // Drop 0th argument (executable path).
+    if args.iter().any(|a| a == "-h" || a == "--help") {
+        println!("{}", HELP_MESSAGE);
+        return;
+    }
+    let (filename, macro_prelude_files) = collect_target_and_macro_prelude_files(args);
     let mut body = parse_file(&filename, "");
     let macros = extract_macro_blocks(&macro_prelude_files, &filename, &mut body);
     let mut converter = Converter::new(&filename, macros);
