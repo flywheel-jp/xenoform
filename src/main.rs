@@ -13,8 +13,8 @@ use hcl_edit::expr::{
 };
 use hcl_edit::structure::{Attribute, Block, BlockLabel, Body};
 use hcl_edit::template::{Element, Interpolation, StringTemplate};
-use hcl_edit::visit_mut::VisitMut;
-use hcl_edit::{Decor, Decorate, Decorated, Ident, visit_mut};
+use hcl_edit::visit_mut::{self, VisitMut};
+use hcl_edit::{Decor, Decorate, Decorated, Ident};
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
