@@ -3,12 +3,26 @@ set -euo pipefail -o posix
 
 : "${XENOFORM_BIN:?}"
 
+"${XENOFORM_BIN}" -h | grep '^Usage: ' >/dev/null
+"${XENOFORM_BIN}" --help | grep '^Usage: ' >/dev/null
+
+function find_expected_output_path() {
+  # Assuming that given arguments contain exactly 1 input .in.tf file
+  while [[ "$#" -gt 0 ]]; do
+    if [[ "$1" = '--macro-prelude' ]]; then
+      shift 2
+    else
+      echo "${1/%.in.tf/.tf}"
+      return
+    fi
+  done
+}
+
 function success() {
-  local path="${*: -1}"
   local out
   out=$("${XENOFORM_BIN}" "$@")
   local expected
-  expected=$(cat "${path/%.in.tf/.tf}")
+  expected=$(cat "$(find_expected_output_path "$@")")
   if [[ "${out}" != "${expected}" ]]; then
     echo 'Unexpected output. Diff:'
     echo '----------'
@@ -18,10 +32,9 @@ function success() {
   fi
 }
 
-success \
-  --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" \
-  --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf" \
-  "$(dirname "$0")/success/all_features.in.tf"
+success --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf" "$(dirname "$0")/success/all_features.in.tf"
+success --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" "$(dirname "$0")/success/all_features.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf"
+success "$(dirname "$0")/success/all_features.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf"
 success "$(dirname "$0")/success/macro_expansion/macro_within_traversal.in.tf"
 
 function error() {
@@ -40,7 +53,8 @@ function error() {
   fi
 }
 
-error '^Filename argument required\.$'
+error '^No input filename given\.$'
+error '^Multiple input filenames provided: \["input1.in.tf", "input2.in.tf"\]$' input1.in.tf input2.in.tf
 error '^Failed to read .*$' "$(dirname "$0")/error/nonexisting_file.in.tf"
 error '^Failed to parse .* as HCL2\.$' "$(dirname "$0")/error/non_hcl2.in.tf"
 error '^Failed to parse .*$' "$(dirname "$0")/error/blocal_duplicated_entries.in.tf" # This results in a parsing error instead of error in our code
