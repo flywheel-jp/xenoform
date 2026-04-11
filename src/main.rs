@@ -439,7 +439,7 @@ fn collect_target_and_macro_prelude_files(args: Vec<String>) -> (String, Vec<Str
             target_files.push(arg);
         }
     }
-    if target_files.len() == 0 {
+    if target_files.is_empty() {
         eprintln_exit!("No input filename given.");
     }
     if target_files.len() >= 2 {
