@@ -29,7 +29,8 @@ Usage: xenoform [OPTION]... [TARGET_FILEPATH]
 Convert terraform source file containing xenoform syntax extensions into normal
 terraform code. The result is printed to STDOUT.
 
-See README.md for the supported syntax extensions.
+See https://github.com/flywheel-jp/xenoform/blob/main/README.md for the supported
+syntax extensions.
 
 Options:
   --macro-prelude file  File path to be included before processing the target file
