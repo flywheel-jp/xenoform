@@ -8,6 +8,7 @@
 //   This is due to the API of hcl-edit where `visit_*_mut` trait methods are required to
 //   return `()`.
 
+use clap::Parser;
 use hcl_edit::expr::{
     Conditional, Expression, FuncArgs, FuncCall, Parenthesis, Traversal, TraversalOperator,
 };
@@ -409,27 +410,29 @@ impl VisitMut for Converter {
 //
 // body of this binary
 //
-fn collect_target_and_macro_prelude_files() -> (String, Vec<String>) {
-    let mut args = std::env::args().skip(1); // drop 0th argument (executable path).
-    let mut macro_prelude_files = Vec::new();
-    while let Some(arg) = args.next() {
-        if arg == "--macro-prelude" {
-            let Some(file) = args.next() else {
-                eprintln_exit!("No filename argument given after '--macro-prelude'.");
-            };
-            macro_prelude_files.push(file);
-        } else {
-            return (arg, macro_prelude_files);
-        }
-    }
-    eprintln_exit!("Filename argument required.");
+/// Converts a terraform source file containing xenoform syntax extensions into normal
+/// terraform code. The result is printed to STDOUT.
+///
+/// See https://github.com/flywheel-jp/xenoform/blob/main/README.md for the supported
+/// syntax extensions.
+#[derive(Parser)]
+struct Cli {
+    /// File to preprocess using xenoform.
+    target_file: String,
+
+    /// File path to be included before processing the target file.
+    ///
+    /// In the target file you can use macros defined in the included files.
+    /// You can include multiple files by repeating `--macro-prelude <FILE>`.
+    #[arg(long, value_name = "FILE")]
+    macro_prelude: Vec<String>,
 }
 
 fn main() {
-    let (filename, macro_prelude_files) = collect_target_and_macro_prelude_files();
-    let mut body = parse_file(&filename, "");
-    let macros = extract_macro_blocks(&macro_prelude_files, &filename, &mut body);
-    let mut converter = Converter::new(&filename, macros);
+    let cli = Cli::parse();
+    let mut body = parse_file(&cli.target_file, "");
+    let macros = extract_macro_blocks(&cli.macro_prelude, &cli.target_file, &mut body);
+    let mut converter = Converter::new(&cli.target_file, macros);
     converter.visit_body_mut(&mut body);
     println!("{body}");
 }
