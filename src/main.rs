@@ -38,7 +38,10 @@ fn increment_and_check_expansion_count(
     name: &str,
     counts: &mut HashMap<String, u32>,
 ) {
-    let count = counts.entry(name.to_string()).and_modify(|c| *c += 1).or_insert(1);
+    let count = counts
+        .entry(name.to_string())
+        .and_modify(|c| *c += 1)
+        .or_insert(1);
     if *count > 100 {
         eprintln_exit!("Too many expansions of {} '{}'.", expansion_type, name);
     }
@@ -65,7 +68,11 @@ fn parse_file<P: AsRef<Path> + Debug>(filename: &P, error_msg_suffix: &str) -> B
         eprintln_exit!("Failed to read {:?}{}.", filename, error_msg_suffix);
     };
     let Ok(body) = input.parse() else {
-        eprintln_exit!("Failed to parse '{:?}' as HCL2{}.", filename, error_msg_suffix);
+        eprintln_exit!(
+            "Failed to parse '{:?}' as HCL2{}.",
+            filename,
+            error_msg_suffix
+        );
     };
     body
 }
@@ -112,20 +119,32 @@ impl MacroDefinition {
     }
 
     fn from_macro_block(macro_name: &str, block: &Block) -> MacroDefinition {
-        let label_strings = block.labels.iter().map(|l| l.to_string()).collect::<Vec<String>>();
+        let label_strings = block
+            .labels
+            .iter()
+            .map(|l| l.to_string())
+            .collect::<Vec<String>>();
         let [_macro_name, arg_names @ ..] = &label_strings[..] else {
-            eprintln_exit!("'macro' block without name label is invalid. (should not happen because we obtain the 1st entry before this)");
+            eprintln_exit!(
+                "'macro' block without name label is invalid. (should not happen because we obtain the 1st entry before this)"
+            );
         };
         let attrs = block.body.attributes().collect::<Vec<&Attribute>>();
         let expr = match attrs.last() {
-            Some(last_attr) if last_attr.key.as_str() == "return" => {
-                attrs[0..attrs.len() - 1].iter().rfold(last_attr.value.clone(), |expr, attr| {
+            Some(last_attr) if last_attr.key.as_str() == "return" => attrs[0..attrs.len() - 1]
+                .iter()
+                .rfold(last_attr.value.clone(), |expr, attr| {
                     expand_var(expr, attr.key.as_str(), &attr.value)
-                })
-            }
-            _ => eprintln_exit!("Last attribute of macro '{}' must be 'return = ...'.", macro_name),
+                }),
+            _ => eprintln_exit!(
+                "Last attribute of macro '{}' must be 'return = ...'.",
+                macro_name
+            ),
         };
-        MacroDefinition { arg_names: arg_names.to_owned(), expression: expr }
+        MacroDefinition {
+            arg_names: arg_names.to_owned(),
+            expression: expr,
+        }
     }
 
     fn expand(&self, macro_name: &str, args: Vec<&Expression>) -> Expression {
@@ -193,10 +212,18 @@ fn extract_macro_blocks_impl(
         };
         let error_msg_suffix = format!(" (included from {:?})", filepath);
         let Ok(include_path) = parent_dir.join(source_path.as_str()).canonicalize() else {
-            eprintln_exit!("Failed to read {}{}.", source_path.as_str(), error_msg_suffix);
+            eprintln_exit!(
+                "Failed to read {}{}.",
+                source_path.as_str(),
+                error_msg_suffix
+            );
         };
         if direct_includes.contains(&include_path) {
-            eprintln_exit!("{:?} is included multiple times within {:?}.", include_path, filepath);
+            eprintln_exit!(
+                "{:?} is included multiple times within {:?}.",
+                include_path,
+                filepath
+            );
         }
         direct_includes.insert(include_path.clone());
         if !all_includes.contains(&include_path) {
@@ -242,8 +269,14 @@ struct Converter {
 
 impl Converter {
     fn new(filename: &str, macros: MacrosMap) -> Converter {
-        let basename = Path::new(filename).file_name().and_then(OsStr::to_str).unwrap();
-        let basename_without_ext = basename.split_once('.').map(|(t0, _t1)| t0).unwrap_or(basename);
+        let basename = Path::new(filename)
+            .file_name()
+            .and_then(OsStr::to_str)
+            .unwrap();
+        let basename_without_ext = basename
+            .split_once('.')
+            .map(|(t0, _t1)| t0)
+            .unwrap_or(basename);
         Converter {
             source_basename_without_ext: basename_without_ext.to_string(),
             blocals: HashMap::new(),
@@ -263,7 +296,10 @@ impl Converter {
     }
 
     fn add_prefix_to_attr_keys(&self, body: &mut Body) {
-        let attrs = body.attributes().map(Attribute::clone).collect::<Vec<Attribute>>();
+        let attrs = body
+            .attributes()
+            .map(Attribute::clone)
+            .collect::<Vec<Attribute>>();
         for attr in attrs {
             if let Some(mut attr2) = body.remove_attribute(attr.key.as_str()) {
                 let new_ident = self.flocal_to_local_name(attr2.key.as_str());
@@ -278,7 +314,10 @@ impl Converter {
             for attr in b.body.attributes() {
                 let key = attr.key.value().as_str();
                 let Entry::Vacant(entry) = self.blocals.entry(key.to_string()) else {
-                    eprintln_exit!("Duplicated key {} in blocals block. (This shouldn't happen because parsing fails if the contents have duplicated attribute keys)", key);
+                    eprintln_exit!(
+                        "Duplicated key {} in blocals block. (This shouldn't happen because parsing fails if the contents have duplicated attribute keys)",
+                        key
+                    );
                 };
                 entry.insert(attr.value.to_owned());
             }
