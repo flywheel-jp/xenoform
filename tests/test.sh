@@ -35,7 +35,8 @@ function success() {
 success --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf" "$(dirname "$0")/success/all_features.in.tf"
 success --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" "$(dirname "$0")/success/all_features.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf"
 success "$(dirname "$0")/success/all_features.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf"
-success "$(dirname "$0")/success/macro_expansion/macro_within_traversal.in.tf"
+success "$(dirname "$0")/success/macro/macro_within_traversal.in.tf"
+success "$(dirname "$0")/success/macro/same_name_different_arity.in.tf"
 
 function error() {
   local expected_exit_code="$1"
@@ -71,9 +72,9 @@ error 1 "^'macro_include' block in .* must have exactly one attribute named 'sou
 error 1 "^'macro_include' block in .* must have exactly one attribute named 'source'\.$" "$(dirname "$0")/error/macro_include_extra_attribute.in.tf"
 error 1 "^Only literal string is allowed for 'source' attribute value\.$" "$(dirname "$0")/error/macro_include_dynamic_source_value.in.tf"
 error 1 "^.* is included multiple times within ".*"\.$" "$(dirname "$0")/error/macro_include_same_file_multiple_times.in.tf"
-error 1 "^Macro named 'bar' not found\.$" "$(dirname "$0")/error/macro_nonexisting_name.in.tf"
-error 1 "^Multiple macros with the same name 'same_name_used_twice' found in this compilation unit\.$" "$(dirname "$0")/error/macro_multiple_macros_with_the_same_name.in.tf"
-error 1 "^Number of args passed to macro 'foo' must be '1'\.$" "$(dirname "$0")/error/macro_different_number_of_args.in.tf"
+error 1 "^Macro named 'bar' with arity '1' not found\.$" "$(dirname "$0")/error/macro_nonexisting_name.in.tf"
+error 1 "^Macro named 'foo' with arity '2' not found\.$" "$(dirname "$0")/error/macro_different_number_of_args.in.tf"
+error 1 "^Duplicate macro blocks with name 'same_name_used_twice' and arity '1' found in this compilation unit\.$" "$(dirname "$0")/error/macro_multiple_macros_with_same_name_arity.in.tf"
 error 1 "^Too many expansions of macro 'recursive'\.$" "$(dirname "$0")/error/macro_self_recursive.in.tf"
 error 1 "^Too many expansions of macro 'recursive1'\.$" "$(dirname "$0")/error/macro_mutual_recursive.in.tf"
 error 1 "^No argument is passed to 'macro::pipeline\(\)'\.$" "$(dirname "$0")/error/macro_empty_pipeline.in.tf"
