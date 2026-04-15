@@ -104,7 +104,13 @@ struct MacroDefinition {
     expression: Expression,
 }
 
+type MacrosMap = HashMap<(String, usize), MacroDefinition>;
+
 impl MacroDefinition {
+    fn arity(&self) -> usize {
+        self.arg_names.len()
+    }
+
     fn from_macro_block(macro_name: &str, block: &Block) -> MacroDefinition {
         let label_strings = block.labels.iter().map(|l| l.to_string()).collect::<Vec<String>>();
         let [_macro_name, arg_names @ ..] = &label_strings[..] else {
@@ -147,22 +153,23 @@ impl MacroDefinition {
 fn extract_macro_blocks_impl(
     filepath: &Path,
     body: &mut Body,
-    macros: &mut HashMap<String, MacroDefinition>,
+    macros: &mut MacrosMap,
     all_includes: &mut HashSet<PathBuf>,
 ) {
     let macro_blocks = body.remove_blocks("macro");
     for m in macro_blocks {
-        let Some(macro_name) = m.labels.first().map(|l| l.to_string()) else {
+        let Some(macro_name) = m.labels.first().map(|l| l.as_str()) else {
             eprintln_exit!("'macro' block without name label is invalid.");
         };
         if macro_name == "pipeline" {
             eprintln_exit!("'pipeline' macro is reserved and cannot be defined.");
         }
         let md = MacroDefinition::from_macro_block(&macro_name, &m);
-        let Entry::Vacant(entry) = macros.entry(macro_name.to_string()) else {
+        let Entry::Vacant(entry) = macros.entry((macro_name.to_string(), md.arity())) else {
             eprintln_exit!(
-                "Multiple macros with the same name '{}' found in this compilation unit.",
-                macro_name
+                "Duplicate macro blocks with name '{}' and arity '{}' found in this compilation unit.",
+                macro_name,
+                md.arity(),
             );
         };
         entry.insert(md);
@@ -204,7 +211,7 @@ fn extract_macro_blocks(
     macro_prelude_files: &[String],
     target_file: &str,
     body: &mut Body,
-) -> HashMap<String, MacroDefinition> {
+) -> MacrosMap {
     let mut macros = HashMap::new();
     let mut all_includes = HashSet::new();
     for prelude_file in macro_prelude_files {
@@ -229,12 +236,12 @@ struct Converter {
     source_basename_without_ext: String,
     blocals: HashMap<String, Expression>,
     blocal_expansion_counts: HashMap<String, u32>,
-    macros: HashMap<String, MacroDefinition>,
+    macros: MacrosMap,
     macro_expansion_counts: HashMap<String, u32>,
 }
 
 impl Converter {
-    fn new(filename: &str, macros: HashMap<String, MacroDefinition>) -> Converter {
+    fn new(filename: &str, macros: MacrosMap) -> Converter {
         let basename = Path::new(filename).file_name().and_then(OsStr::to_str).unwrap();
         let basename_without_ext = basename.split_once('.').map(|(t0, _t1)| t0).unwrap_or(basename);
         Converter {
@@ -387,8 +394,14 @@ impl VisitMut for Converter {
                         }
                         *expr = wrap_with_paren(e2);
                     } else {
-                        let Some(macro_def) = self.macros.get(macro_name) else {
-                            eprintln_exit!("Macro named '{}' not found.", macro_name);
+                        let arity = call.args.len();
+                        let key = (macro_name.to_string(), arity);
+                        let Some(macro_def) = self.macros.get(&key) else {
+                            eprintln_exit!(
+                                "Macro named '{}' with arity '{}' not found.",
+                                macro_name,
+                                arity,
+                            );
                         };
                         increment_and_check_expansion_count(
                             "macro",
