@@ -164,7 +164,7 @@ fn extract_macro_blocks_impl(
         if macro_name == "pipeline" {
             eprintln_exit!("'pipeline' macro is reserved and cannot be defined.");
         }
-        let md = MacroDefinition::from_macro_block(&macro_name, &m);
+        let md = MacroDefinition::from_macro_block(macro_name, &m);
         let Entry::Vacant(entry) = macros.entry((macro_name.to_string(), md.arity())) else {
             eprintln_exit!(
                 "Duplicate macro blocks with name '{}' and arity '{}' found in this compilation unit.",
