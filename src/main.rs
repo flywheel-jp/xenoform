@@ -373,7 +373,7 @@ impl VisitMut for Converter {
             "resource" | "module" => {
                 self.take_blocals_block_if_present(node);
                 clear_blocals = true;
-            },
+            }
             "flocals" => self.canonicalize_flocals_block(node),
             "assert" => self.convert_assert_block(node),
             _ => (),
