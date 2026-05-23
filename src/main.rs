@@ -368,8 +368,12 @@ impl Converter {
 
 impl VisitMut for Converter {
     fn visit_block_mut(&mut self, node: &mut Block) {
+        let mut clear_blocals = false;
         match node.ident.value().as_str() {
-            "resource" | "module" => self.take_blocals_block_if_present(node),
+            "resource" | "module" => {
+                self.take_blocals_block_if_present(node);
+                clear_blocals = true;
+            },
             "flocals" => self.canonicalize_flocals_block(node),
             "assert" => self.convert_assert_block(node),
             _ => (),
@@ -377,7 +381,9 @@ impl VisitMut for Converter {
         // Continue tree visiting to handle other parts of AST
         visit_mut::visit_block_mut(self, node);
         // Forget about the entries in blocals block (if any)
-        self.blocals.clear();
+        if clear_blocals {
+            self.blocals.clear();
+        }
     }
 
     fn visit_traversal_mut(&mut self, node: &mut Traversal) {
