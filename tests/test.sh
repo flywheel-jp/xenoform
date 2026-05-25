@@ -35,6 +35,7 @@ function success() {
 success --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf" "$(dirname "$0")/success/all_features.in.tf"
 success --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" "$(dirname "$0")/success/all_features.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf"
 success "$(dirname "$0")/success/all_features.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf"
+success "$(dirname "$0")/success/blocal/blocals_kept_after_nested_block.in.tf"
 success "$(dirname "$0")/success/macro/macro_within_traversal.in.tf"
 success "$(dirname "$0")/success/macro/same_name_different_arity.in.tf"
 
