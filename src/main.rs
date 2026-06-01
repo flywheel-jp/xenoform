@@ -474,6 +474,7 @@ impl VisitMut for Converter {
 /// See https://github.com/flywheel-jp/xenoform/blob/main/README.md for the supported
 /// syntax extensions.
 #[derive(Parser)]
+#[command(version)]
 struct Cli {
     /// File to preprocess using xenoform.
     target_file: String,

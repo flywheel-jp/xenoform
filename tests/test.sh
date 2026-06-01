@@ -5,6 +5,7 @@ set -euo pipefail -o posix
 
 "${XENOFORM_BIN}" -h | grep '^Usage: ' >/dev/null
 "${XENOFORM_BIN}" --help | grep '^Usage: ' >/dev/null
+"${XENOFORM_BIN}" --version | grep '^xenoform ' >/dev/null
 
 function find_expected_output_path() {
   # Assuming that given arguments contain exactly 1 input .in.tf file
