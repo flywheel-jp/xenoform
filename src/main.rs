@@ -20,7 +20,7 @@ use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::fmt::Debug;
-use std::fs::read_to_string;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 //
@@ -64,7 +64,7 @@ fn wrap_with_paren(expr: Expression) -> Expression {
 }
 
 fn parse_file<P: AsRef<Path> + Debug>(filename: &P, error_msg_suffix: &str) -> Body {
-    let Ok(input) = read_to_string(filename) else {
+    let Ok(input) = fs::read_to_string(filename) else {
         eprintln_exit!("Failed to read {:?}{}.", filename, error_msg_suffix);
     };
     let Ok(body) = input.parse() else {
@@ -469,7 +469,7 @@ impl VisitMut for Converter {
 // body of this binary
 //
 /// Converts a terraform source file containing xenoform syntax extensions into normal
-/// terraform code. The result is printed to STDOUT.
+/// terraform code. The result is printed to STDOUT or to a file specified by `--out`.
 ///
 /// See https://github.com/flywheel-jp/xenoform/blob/main/README.md for the supported
 /// syntax extensions.
@@ -485,6 +485,23 @@ struct Cli {
     /// You can include multiple files by repeating `--macro-prelude <FILE>`.
     #[arg(long, value_name = "FILE")]
     macro_prelude: Vec<String>,
+
+    /// File path to write the preprocessed source code. If not given the result
+    /// is written to STDOUT.
+    #[arg(long, value_name = "FILE")]
+    out: Option<String>,
+}
+
+fn print_body(cli_out: &Option<String>, body: &Body) {
+    let content = format!("{body}\n");
+    match cli_out {
+        Some(out) => {
+            if let Err(e) = fs::write(out, content) {
+                eprintln_exit!("Failed to write to {}: {}.", out, e);
+            }
+        }
+        None => print!("{}", content),
+    }
 }
 
 fn main() {
@@ -493,5 +510,5 @@ fn main() {
     let macros = extract_macro_blocks(&cli.macro_prelude, &cli.target_file, &mut body);
     let mut converter = Converter::new(&cli.target_file, macros);
     converter.visit_body_mut(&mut body);
-    println!("{body}");
+    print_body(&cli.out, &body);
 }

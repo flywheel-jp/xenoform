@@ -10,7 +10,7 @@ set -euo pipefail -o posix
 function find_expected_output_path() {
   # Assuming that given arguments contain exactly 1 input .in.tf file
   while [[ "$#" -gt 0 ]]; do
-    if [[ "$1" = '--macro-prelude' ]]; then
+    if [[ "$1" = '--macro-prelude' ]] || [[ "$1" = '--out' ]]; then
       shift 2
     else
       echo "${1/%.in.tf/.tf}"
@@ -19,9 +19,9 @@ function find_expected_output_path() {
   done
 }
 
-function success() {
-  local out
-  out=$("${XENOFORM_BIN}" "$@")
+function compare_output() {
+  local out="$1"
+  shift
   local expected
   expected=$(cat "$(find_expected_output_path "$@")")
   if [[ "${out}" != "${expected}" ]]; then
@@ -31,6 +31,27 @@ function success() {
     echo '----------'
     exit 1
   fi
+}
+
+function success_stdout() {
+  local out
+  out=$("${XENOFORM_BIN}" "$@")
+  compare_output "${out}" "$@"
+}
+
+function success_file() {
+  local outfile
+  outfile=$(mktemp)
+  "${XENOFORM_BIN}" "$@" --out "${outfile}"
+  local out
+  out=$(cat "${outfile}")
+  rm "${outfile}"
+  compare_output "${out}" "$@"
+}
+
+function success() {
+  success_stdout "$@"
+  success_file "$@"
 }
 
 success --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf" "$(dirname "$0")/success/all_features.in.tf"
