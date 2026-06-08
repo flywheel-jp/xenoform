@@ -445,17 +445,13 @@ impl VisitMut for Converter {
                 [ns] if ns.as_str() == "macro" => {
                     let macro_name = call.name.name.as_str();
                     if macro_name == "pipeline" {
-                        *expr = make_expr_from_call(
-                            &call,
-                            "pipeline",
-                            |_i, arg, e| expand_var(arg.to_owned(), "_", &e),
-                        )
+                        *expr = make_expr_from_call(&call, "pipeline", |_i, arg, e| {
+                            expand_var(arg.to_owned(), "_", &e)
+                        })
                     } else if macro_name == "bind" {
-                        *expr = make_expr_from_call(
-                            &call,
-                            "bind",
-                            |i, arg, e| expand_var(e, &format!("_{}", i + 1), arg),
-                        )
+                        *expr = make_expr_from_call(&call, "bind", |i, arg, e| {
+                            expand_var(e, &format!("_{}", i + 1), arg)
+                        })
                     } else {
                         let arity = call.args.len();
                         let key = (macro_name.to_string(), arity);
