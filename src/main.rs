@@ -424,20 +424,38 @@ impl VisitMut for Converter {
     }
 
     fn visit_expr_mut(&mut self, expr: &mut Expression) {
+        fn make_expr_from_call<F: for<'a> Fn(usize, &'a Expression, Expression) -> Expression>(
+            call: &FuncCall,
+            name: &str,
+            f: F,
+        ) -> Expression {
+            let mut args_iter = call.args.iter();
+            let Some(e1) = args_iter.next() else {
+                eprintln_exit!("No argument is passed to 'macro::{}()'.", name);
+            };
+            let mut e2 = e1.to_owned();
+            for (i, arg) in args_iter.enumerate() {
+                e2 = f(i, arg, e2);
+            }
+            wrap_with_paren(e2)
+        }
+
         if let Expression::FuncCall(call) = expr {
             match &call.name.namespace[..] {
                 [ns] if ns.as_str() == "macro" => {
                     let macro_name = call.name.name.as_str();
                     if macro_name == "pipeline" {
-                        let mut args_iter = call.args.iter();
-                        let Some(e1) = args_iter.next() else {
-                            eprintln_exit!("No argument is passed to 'macro::pipeline()'.");
-                        };
-                        let mut e2 = e1.to_owned();
-                        for arg in args_iter {
-                            e2 = expand_var(arg.to_owned(), "_", &e2);
-                        }
-                        *expr = wrap_with_paren(e2);
+                        *expr = make_expr_from_call(
+                            &call,
+                            "pipeline",
+                            |_i, arg, e| expand_var(arg.to_owned(), "_", &e),
+                        )
+                    } else if macro_name == "bind" {
+                        *expr = make_expr_from_call(
+                            &call,
+                            "bind",
+                            |i, arg, e| expand_var(e, &format!("_{}", i + 1), arg),
+                        )
                     } else {
                         let arity = call.args.len();
                         let key = (macro_name.to_string(), arity);
