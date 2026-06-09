@@ -104,6 +104,7 @@ error 1 "^Too many expansions of macro 'recursive1'\.$" "$(dirname "$0")/error/m
 error 1 "^No argument is passed to 'macro::pipeline\(\)'\.$" "$(dirname "$0")/error/macro_empty_pipeline.in.tf"
 error 1 "^No argument is passed to 'macro::bind\(\)'\.$" "$(dirname "$0")/error/macro_empty_bind.in.tf"
 error 1 "^'pipeline' macro is reserved and cannot be defined\.$" "$(dirname "$0")/error/macro_redefine_pipeline.in.tf"
+error 1 "^'bind' macro is reserved and cannot be defined\.$" "$(dirname "$0")/error/macro_redefine_bind.in.tf"
 error 1 '^Failed to read .* \(given as a macro prelude\)\.$' '--macro-prelude' "$(dirname "$0")/error/nonexisting_file.in.tf" "$(dirname "$0")/success/all_features.in.tf"
 error 1 '^Failed to parse .* as HCL2 \(given as a macro prelude\)\.$' '--macro-prelude' "$(dirname "$0")/error/non_hcl2.in.tf" "$(dirname "$0")/success/all_features.in.tf"
 error 1 "^Exactly 1 label is expected for 'assert' block\.$" "$(dirname "$0")/error/assert_too_many_labels.in.tf"

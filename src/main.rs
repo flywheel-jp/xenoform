@@ -169,6 +169,8 @@ impl MacroDefinition {
 //
 // recognize macros in input file and also in included files
 //
+const PREDEFINED_MACRO_NAMES: &[&str] = &["pipeline", "bind"];
+
 fn extract_macro_blocks_impl(
     filepath: &Path,
     body: &mut Body,
@@ -180,8 +182,10 @@ fn extract_macro_blocks_impl(
         let Some(macro_name) = m.labels.first().map(|l| l.as_str()) else {
             eprintln_exit!("'macro' block without name label is invalid.");
         };
-        if macro_name == "pipeline" {
-            eprintln_exit!("'pipeline' macro is reserved and cannot be defined.");
+        for n in PREDEFINED_MACRO_NAMES {
+            if macro_name == *n {
+                eprintln_exit!("'{}' macro is reserved and cannot be defined.", n);
+            }
         }
         let md = MacroDefinition::from_macro_block(macro_name, &m);
         let Entry::Vacant(entry) = macros.entry((macro_name.to_string(), md.arity())) else {
