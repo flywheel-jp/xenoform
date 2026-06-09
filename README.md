@@ -179,7 +179,7 @@ See also `tests/success/all_features.in.tf` for a usage example.
 - Macro bodies are expanded at call site. If a macro body contains variable references
   such as `local.foo` and `flocal.bar` and the macro resides in another directory/file,
   the variables cannot be resolved from the call site.
-  - note: You can define a 0-arg macro as a preprocess-time constant.
+  - Note: You can define a 0-arg macro as a preprocess-time constant.
 - Code comments are basically preserved so that static code analysis tools can use them
   (e.g. to suppress warnings of a tool). However, comments before xenoform-specific blocks
   (`macro`, `blocals` and `assert`) are removed together with the blocks.
