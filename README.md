@@ -82,7 +82,7 @@ See also `tests/success/all_features.in.tf` for a usage example.
 ### Predefined macros
 
 - The following macros are special macros implemented in the preprocessor layer,
-  instead of macros defined using `macro` block. They take arbitrary number of arguments.
+  instead of macros defined using `macro` block. They take a variable number of arguments (at least 1).
 
 #### `pipeline` macro
 
