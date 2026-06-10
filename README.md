@@ -79,7 +79,12 @@ See also `tests/success/all_features.in.tf` for a usage example.
 - Include from command line: You can instead pass `--macro-prelude another_file.in.tf`
   in order to use macros defined in the file.
 
-### `pipeline` macro
+### Predefined macros
+
+- The following macros are special macros implemented in the preprocessor layer,
+  instead of macros defined using `macro` block. They take a variable number of arguments (at least 1).
+
+#### `pipeline` macro
 
 - Motivation
   - Large complex expressions such as nested for-expressions are hard to read. We can
@@ -91,7 +96,7 @@ See also `tests/success/all_features.in.tf` for a usage example.
 
   ```tf
   locals {
-    # Expanded to `join(", ", [for x in concat([1, 2, 3], [4, 5]) : x + 1])` with some extra whitespaces
+    # Expanded to `join(", ", [for x in concat([1, 2, 3], [4, 5]) : x + 1])` with some extra parens/spaces
     use_pipeline = macro::pipeline(
       [1, 2, 3],            # 1st step (just an expression).
       concat(_, [4, 5]),    # 2nd step (expression with a placeholder). `_` is replaced by the result of the 1st step.
@@ -101,8 +106,40 @@ See also `tests/success/all_features.in.tf` for a usage example.
   }
   ```
 
-- Note: `pipeline` macro is a special macro and is implemented in the preprocessor layer,
-  instead of a macro defined using `macro` block. It takes arbitrary number of arguments (steps).
+#### `bind` macro
+
+- Motivation
+  - To enable code reuse with macros that look like higher-order functions.
+    - Sometimes you need to write terraform expressions that are almost the same but slightly
+      different in a small part of the expression. To facilitate code reuse, it'd be nice to
+      "inject" the different part of the code from the macro calling side.
+- Example:
+
+  ```tf
+  locals {
+    # Expanded to `10 + 20` with some extra parens/spaces
+    use_bind = macro::bind(_1 + _2, 10, 20)
+  }
+  ```
+
+  First argument passed to `macro::bind()` is an expression containing placeholder variables
+  such as `_1` and `_2`. `macro::bind()` binds the remaining arguments to the placeholder
+  variables. In this example, `10` is bound to `_1`, and `20` to `_2`.
+
+  `macro::bind()` is not expected to be called in normal terraform code; it's useful when
+  you are writing reusable macros. `macro::bind()` can be used as an invocation of the
+  function-like expression injected from the caller side.
+
+  ```tf
+  macro "mymap" "arr" "f" {
+    return = [for e in arr : macro::bind(f, e)]
+  }
+
+  locals {
+    # Expanded to `[for e in [1, 2, 3] : e * 2]` with some extra parens/spaces
+    use_mymap = macro::mymap([1, 2, 3], _1 * 2)
+  }
+  ```
 
 ### Assertion
 
@@ -142,6 +179,7 @@ See also `tests/success/all_features.in.tf` for a usage example.
 - Macro bodies are expanded at call site. If a macro body contains variable references
   such as `local.foo` and `flocal.bar` and the macro resides in another directory/file,
   the variables cannot be resolved from the call site.
+  - Note: You can define a 0-arg macro as a preprocess-time constant.
 - Code comments are basically preserved so that static code analysis tools can use them
   (e.g. to suppress warnings of a tool). However, comments before xenoform-specific blocks
   (`macro`, `blocals` and `assert`) are removed together with the blocks.
