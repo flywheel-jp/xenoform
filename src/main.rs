@@ -65,7 +65,7 @@ fn wrap_with_paren(expr: Expression) -> Expression {
 }
 
 // `hcl_edit::visit_mut::VisitMut` does not allow us to change object keys containing
-// expressions with `visit_expr_mut` method (possibly due to the rust map API:
+// expressions with `visit_expr_mut` method (possibly due to the Rust map API:
 // `iter_mut()` does not allow key mutations). To change the object keys, we need to
 // override `visit_object_mut` method and swap the object with possibly-modified keys.
 // This function is the common implementation of `visit_object_mut` methods and utilizes
