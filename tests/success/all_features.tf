@@ -18,7 +18,7 @@ resource "someprovider_someresource" "xxx" {
   use_blocal_foo                = ( "${local.a}_${local.flocal_all_features_x.y}_${each.value}")
   use_blocal_baz                = ( ( local.z + 3) + 10)
   use_blocal_list               = ( ["a", "b", "c"])[1]
-  use_blocal_object             = ( { k1 = "v1", k2 = "v2" }).k2
+  use_blocal_object             = ({ k1 = "v1", k2 = "v2" }).k2
   use_macro_in_this_file        = ( ( (( local.z + 3) + 6) + 1) * ( ( local.flocal_all_features_x.y) + 2))
   use_directly_included_macro   = (( ((7)) + ( 9)))
   use_indirectly_included_macro = ( (8) + ( 9))
