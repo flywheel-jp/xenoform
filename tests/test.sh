@@ -106,9 +106,24 @@ error 1 "^No argument is passed to 'macro::pipeline\(\)'\.$" "$(dirname "$0")/er
 error 1 "^No argument is passed to 'macro::bind\(\)'\.$" "$(dirname "$0")/error/macro_empty_bind.in.tf"
 error 1 "^'pipeline' macro is reserved and cannot be defined\.$" "$(dirname "$0")/error/macro_redefine_pipeline.in.tf"
 error 1 "^'bind' macro is reserved and cannot be defined\.$" "$(dirname "$0")/error/macro_redefine_bind.in.tf"
+error 1 "^Duplicate macro blocks with name 'map' and arity '2' found in this compilation unit\.$" "$(dirname "$0")/error/macro_redefine_macro_in_prelude.in.tf"
 error 1 '^Failed to read .* \(given as a macro prelude\)\.$' '--macro-prelude' "$(dirname "$0")/error/nonexisting_file.in.tf" "$(dirname "$0")/success/all_features.in.tf"
 error 1 '^Failed to parse .* as HCL2 \(given as a macro prelude\)\.$' '--macro-prelude' "$(dirname "$0")/error/non_hcl2.in.tf" "$(dirname "$0")/success/all_features.in.tf"
 error 1 "^Exactly 1 label is expected for 'assert' block\.$" "$(dirname "$0")/error/assert_too_many_labels.in.tf"
 error 1 "^Attribute 'condition' must be given to 'assert' block\.$" "$(dirname "$0")/error/assert_missing_condition_attribute.in.tf"
+
+function macro_lib_unittest() {
+  local dir
+  dir=$(mktemp -d)
+  local name
+  name=$(basename "$f")
+  "${XENOFORM_BIN}" "$f" --out "${dir}/${name/%.in.tf/.tf}"
+  terraform -chdir="${dir}" validate >/dev/null
+  rm -r "${dir}"
+}
+
+for f in "$(dirname "$0")/macro_lib_unittests"/*; do
+  macro_lib_unittest "$f"
+done
 
 echo 'Succesfully finished all tests.'

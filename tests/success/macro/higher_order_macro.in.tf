@@ -1,4 +1,4 @@
-macro "map" "arr" "f" {
+macro "mymap" "arr" "f" {
   return = [for e in arr : macro::bind(f, e)]
 }
 
@@ -7,7 +7,7 @@ locals {
 
   use_map_with_pipeline = macro::pipeline(
     [1, 2, 3],
-    macro::map(_, _1 + 1),
-    macro::map(_, _1 * 2),
+    macro::mymap(_, _1 + 1),
+    macro::mymap(_, _1 * 2),
   )
 }

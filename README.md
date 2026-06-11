@@ -81,8 +81,12 @@ See also `tests/success/all_features.in.tf` for a usage example.
 
 ### Predefined macros
 
-- The following macros are special macros implemented in the preprocessor layer,
-  instead of macros defined using `macro` block. They take a variable number of arguments (at least 1).
+#### Xenoform macro library
+
+- Xenoform CLI comes with a library of utility macros.
+  They are automatically included and are available in all xenoform code.
+  See [macro_lib.in.tf](https://github.com/flywheel-jp/xenoform/blob/main/src/macro_lib.in.tf)
+  and the comments on `macro` blocks for the details of available macros.
 
 #### `pipeline` macro
 
@@ -105,6 +109,9 @@ See also `tests/success/all_features.in.tf` for a usage example.
     )
   }
   ```
+
+- Note: `pipeline` macro is a special macro implemented in the preprocessor, i.e., it's not a
+  macro defined using `macro` block. It takes a variable number of arguments (at least 1).
 
 #### `bind` macro
 
@@ -140,6 +147,9 @@ See also `tests/success/all_features.in.tf` for a usage example.
     use_mymap = macro::mymap([1, 2, 3], _1 * 2)
   }
   ```
+
+- Note: `bind` macro is a special macro implemented in the preprocessor, i.e., it's not a
+  macro defined using `macro` block. It takes a variable number of arguments (at least 1).
 
 ### Assertion
 

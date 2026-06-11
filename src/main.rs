@@ -193,7 +193,9 @@ impl MacroDefinition {
 //
 // recognize macros in input file and also in included files
 //
-const PREDEFINED_MACRO_NAMES: &[&str] = &["pipeline", "bind"];
+const MACRO_LIB_CONTENT: &str = include_str!("macro_lib.in.tf");
+
+const SPECIAL_MACRO_NAMES: &[&str] = &["pipeline", "bind"];
 
 fn extract_macro_blocks_impl(
     filepath: &Path,
@@ -206,7 +208,7 @@ fn extract_macro_blocks_impl(
         let Some(macro_name) = m.labels.first().map(|l| l.as_str()) else {
             eprintln_exit!("'macro' block without name label is invalid.");
         };
-        for n in PREDEFINED_MACRO_NAMES {
+        for n in SPECIAL_MACRO_NAMES {
             if macro_name == *n {
                 eprintln_exit!("'{}' macro is reserved and cannot be defined.", n);
             }
@@ -269,6 +271,13 @@ fn extract_macro_blocks(
 ) -> MacrosMap {
     let mut macros = HashMap::new();
     let mut all_includes = HashSet::new();
+    let mut lib_body = MACRO_LIB_CONTENT.parse().unwrap();
+    extract_macro_blocks_impl(
+        Path::new("xenoform_macro_lib.in.tf"),
+        &mut lib_body,
+        &mut macros,
+        &mut all_includes,
+    );
     for prelude_file in macro_prelude_files {
         let mut prelude_body = parse_file(prelude_file, " (given as a macro prelude)");
         extract_macro_blocks_impl(
