@@ -22,6 +22,7 @@ use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fs;
+use std::mem;
 use std::path::{Path, PathBuf};
 
 //
@@ -71,15 +72,13 @@ fn wrap_with_paren(expr: Expression) -> Expression {
 // This function is the common implementation of `visit_object_mut` methods and utilizes
 // each `visit_*_mut` methods of the actual `VisitMut` implementation.
 fn visit_object_keys_and_values_mut<T: VisitMut>(visitor: &mut T, obj: &mut Object) {
-    let mut obj2 = Object::with_capacity(obj.len());
-    for (k, v) in obj.iter() {
-        let mut k2 = k.to_owned();
-        if let ObjectKey::Expression(ref mut expr) = k2 {
+    let old = mem::replace(obj, Object::with_capacity(obj.len()));
+    for (mut k, v) in old.into_iter() {
+        if let ObjectKey::Expression(expr) = &mut k {
             visitor.visit_expr_mut(expr);
-        };
-        obj2.insert(k2, v.to_owned());
+        }
+        obj.insert(k, v);
     }
-    *obj = obj2;
     // Use normal `visit_object_mut` for object values.
     visit_mut::visit_object_mut(visitor, obj);
 }
