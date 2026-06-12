@@ -5,6 +5,7 @@ locals {
   macro_call_in_obj_key               = { (( "${ ("key") }_")) = "value" }
   macro_call_in_obj_key_value         = { (( "${ ("key") }_")) = ( "${ ("value") }_")}
   var_and_macro_call_in_obj_key_value = ({
+    fixed_key               = "fixed_value"
     (("str"))                     = ("str")
     (( "${ (("str")) }_")) = ( "${ (("str")) }_")
 })

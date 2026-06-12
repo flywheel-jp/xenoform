@@ -12,6 +12,7 @@ macro "obj_kv" "s" {
 
 macro "obj_all" "s" {
   return = {
+    fixed_key               = "fixed_value"
     (s)                     = s
     (macro::append_char(s)) = macro::append_char(s)
   }
