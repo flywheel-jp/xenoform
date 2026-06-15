@@ -10,7 +10,8 @@
 
 use clap::Parser;
 use hcl_edit::expr::{
-    Conditional, Expression, FuncArgs, FuncCall, Parenthesis, Traversal, TraversalOperator,
+    Conditional, Expression, FuncArgs, FuncCall, Object, ObjectKey, Parenthesis, Traversal,
+    TraversalOperator,
 };
 use hcl_edit::structure::{Attribute, Block, BlockLabel, Body};
 use hcl_edit::template::{Element, Interpolation, StringTemplate};
@@ -21,6 +22,7 @@ use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fs;
+use std::mem;
 use std::path::{Path, PathBuf};
 
 //
@@ -63,6 +65,24 @@ fn wrap_with_paren(expr: Expression) -> Expression {
     Expression::from(Parenthesis::new(expr))
 }
 
+// `hcl_edit::visit_mut::VisitMut` does not allow us to change object keys containing
+// expressions with `visit_expr_mut` method (possibly due to the Rust map API:
+// `iter_mut()` does not allow key mutations). To change the object keys, we need to
+// override `visit_object_mut` method and swap the object with possibly-modified keys.
+// This function is the common implementation of `visit_object_mut` methods and utilizes
+// each `visit_*_mut` methods of the actual `VisitMut` implementation.
+fn visit_object_keys_and_values_mut<T: VisitMut>(visitor: &mut T, obj: &mut Object) {
+    let old = mem::replace(obj, Object::with_capacity(obj.len()));
+    for (mut k, v) in old.into_iter() {
+        if let ObjectKey::Expression(expr) = &mut k {
+            visitor.visit_expr_mut(expr);
+        }
+        obj.insert(k, v);
+    }
+    // Use normal `visit_object_mut` for object values.
+    visit_mut::visit_object_mut(visitor, obj);
+}
+
 fn parse_file<P: AsRef<Path> + Debug>(filename: &P, error_msg_suffix: &str) -> Body {
     let Ok(input) = fs::read_to_string(filename) else {
         eprintln_exit!("Failed to read {:?}{}.", filename, error_msg_suffix);
@@ -93,6 +113,10 @@ impl VisitMut for VarExpand<'_, '_> {
             }
             _ => visit_mut::visit_expr_mut(self, expr),
         }
+    }
+
+    fn visit_object_mut(&mut self, obj: &mut Object) {
+        visit_object_keys_and_values_mut(self, obj);
     }
 }
 
@@ -480,6 +504,10 @@ impl VisitMut for Converter {
         } else {
             visit_mut::visit_expr_mut(self, expr);
         }
+    }
+
+    fn visit_object_mut(&mut self, obj: &mut Object) {
+        visit_object_keys_and_values_mut(self, obj);
     }
 }
 

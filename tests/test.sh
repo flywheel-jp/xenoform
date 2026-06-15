@@ -60,6 +60,7 @@ success "$(dirname "$0")/success/all_features.in.tf" --macro-prelude "$(dirname 
 success "$(dirname "$0")/success/blocal/blocals_kept_after_nested_block.in.tf"
 success "$(dirname "$0")/success/macro/higher_order_macro.in.tf"
 success "$(dirname "$0")/success/macro/macro_within_traversal.in.tf"
+success "$(dirname "$0")/success/macro/object_key_rewrites.in.tf"
 success "$(dirname "$0")/success/macro/same_name_different_arity.in.tf"
 
 function error() {
