@@ -26,5 +26,6 @@ jobs:
       run: cargo clippy
     - name: Build
       run: cargo build --verbose
+    - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
     - name: Run tests
       run: XENOFORM_BIN=target/debug/xenoform ./tests/test.sh
