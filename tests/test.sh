@@ -89,6 +89,7 @@ error 2 "^error: a value is required for '--macro-prelude <FILE>' but none was s
 error 1 '^Failed to read .*$' "$(dirname "$0")/error/nonexisting_file.in.tf"
 error 1 '^Failed to parse .* as HCL2\.$' "$(dirname "$0")/error/non_hcl2.in.tf"
 error 1 '^Failed to parse .*$' "$(dirname "$0")/error/blocal_duplicated_entries.in.tf" # This results in a parsing error instead of error in our code
+error 1 "^Failed to write to 'nonexisting_dir/out.tf': No such file or directory \(os error 2\)\.$" --out nonexisting_dir/out.tf --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf" "$(dirname "$0")/success/all_features.in.tf"
 error 1 "^'blocal\.x' not present in blocals block\.$" "$(dirname "$0")/error/blocal_different_block.in.tf"
 error 1 "^Too many expansions of blocal 'x'\.$" "$(dirname "$0")/error/blocal_self_recursive.in.tf"
 error 1 "^Too many expansions of blocal 'x'\.$" "$(dirname "$0")/error/blocal_mutual_recursive.in.tf"

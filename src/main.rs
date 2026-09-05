@@ -174,7 +174,7 @@ impl MacroDefinition {
     fn expand(&self, macro_name: &str, args: Vec<&Expression>) -> Expression {
         if self.arg_names.len() != args.len() {
             eprintln_exit!(
-                "Number of args passed to macro '{}' must be '{}'.",
+                "Number of args passed to macro '{}' must be '{}'. (should not happen because we obtain `MacroDef` based on the number of arguments passed)",
                 macro_name,
                 self.arg_names.len()
             );
@@ -224,7 +224,10 @@ fn extract_macro_blocks_impl(
         entry.insert(md);
     }
     let Some(parent_dir) = filepath.parent() else {
-        eprintln_exit!("Parent directory of {:?} not found.", filepath);
+        eprintln_exit!(
+            "Parent directory of {:?} not found. (should not happen given we already successfully read the file content as `body`)",
+            filepath
+        );
     };
     let macro_include_blocks = body.remove_blocks("macro_include");
     let mut direct_includes = HashSet::new();
@@ -559,7 +562,7 @@ fn print_body(cli_out: &Option<String>, body: &Body) {
     match cli_out {
         Some(out) => {
             if let Err(e) = fs::write(out, content) {
-                eprintln_exit!("Failed to write to {}: {}.", out, e);
+                eprintln_exit!("Failed to write to '{}': {}.", out, e);
             }
         }
         None => print!("{}", content),
