@@ -64,6 +64,7 @@ success "$(dirname "$0")/success/macro/higher_order_macro.in.tf"
 success "$(dirname "$0")/success/macro/macro_within_traversal.in.tf"
 success "$(dirname "$0")/success/macro/object_key_rewrites.in.tf"
 success "$(dirname "$0")/success/macro/same_name_different_arity.in.tf"
+success "$(dirname "$0")/success/keep_nested_flocals_and_assert_blocks.in.tf"
 
 function error() {
   local expected_exit_code="$1"

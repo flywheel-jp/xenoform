@@ -302,6 +302,7 @@ struct Converter {
     blocal_expansion_counts: HashMap<String, u32>,
     macros: MacrosMap,
     macro_expansion_counts: HashMap<String, u32>,
+    toplevel: bool,
 }
 
 impl Converter {
@@ -320,6 +321,7 @@ impl Converter {
             blocal_expansion_counts: HashMap::new(),
             macros,
             macro_expansion_counts: HashMap::new(),
+            toplevel: true,
         }
     }
 
@@ -406,17 +408,22 @@ impl Converter {
 impl VisitMut for Converter {
     fn visit_block_mut(&mut self, node: &mut Block) {
         let mut clear_blocals = false;
-        match node.ident.value().as_str() {
-            "resource" | "module" => {
-                self.take_blocals_block_if_present(node);
-                clear_blocals = true;
+        if self.toplevel {
+            match node.ident.value().as_str() {
+                "resource" | "module" => {
+                    self.take_blocals_block_if_present(node);
+                    clear_blocals = true;
+                }
+                "flocals" => self.canonicalize_flocals_block(node),
+                "assert" => self.convert_assert_block(node),
+                _ => (),
             }
-            "flocals" => self.canonicalize_flocals_block(node),
-            "assert" => self.convert_assert_block(node),
-            _ => (),
         }
         // Continue tree visiting to handle other parts of AST
+        let orig_toplevel = self.toplevel;
+        self.toplevel = false;
         visit_mut::visit_block_mut(self, node);
+        self.toplevel = orig_toplevel;
         // Forget about the entries in blocals block (if any)
         if clear_blocals {
             self.blocals.clear();
