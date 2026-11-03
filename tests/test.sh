@@ -6,6 +6,10 @@ set -euo pipefail -o posix
 "${XENOFORM_BIN}" -h | grep '^Usage: ' >/dev/null
 "${XENOFORM_BIN}" --help | grep '^Usage: ' >/dev/null
 "${XENOFORM_BIN}" --version | grep '^xenoform ' >/dev/null
+"${XENOFORM_BIN}" --guide | grep '^# Xenoform$' >/dev/null
+"${XENOFORM_BIN}" --guide | grep '^- `macro::map(arr, f)`$' >/dev/null
+"${XENOFORM_BIN}" --guide | grep '^Usage: ' >/dev/null
+"${XENOFORM_BIN}" --builtin-macros | grep '^macro "map" "arr" "f" {$' >/dev/null
 
 function find_expected_output_path() {
   # Assuming that given arguments contain exactly 1 input .in.tf file
@@ -80,7 +84,7 @@ function error() {
   fi
 }
 
-error 2 '^error: the following required arguments were not provided:.*'
+error 1 '^No target file given\. See `xenoform --help` or `xenoform --guide` for usage\.$'
 error 2 "^error: unexpected argument 'input2.in.tf' found.*" input1.in.tf input2.in.tf
 error 2 "^error: a value is required for '--macro-prelude <FILE>' but none was supplied.*" '--macro-prelude'
 error 1 '^Failed to read .*$' "$(dirname "$0")/error/nonexisting_file.in.tf"
