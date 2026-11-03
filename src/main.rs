@@ -603,7 +603,7 @@ fn builtin_macros_summary() -> String {
             let Some(macro_name) = m.labels.first().map(|l| l.as_str().to_string()) else {
                 eprintln_exit!("Broken macro block in `macro_lib.in.tf` (shouold not happen)");
             };
-            let md = MacroDefinition::from_macro_block(&macro_name, &m);
+            let md = MacroDefinition::from_macro_block(&macro_name, m);
             format!("- `{}`", md.macro_call_string(&macro_name))
         })
         .collect::<Vec<_>>()
