@@ -605,7 +605,7 @@ fn builtin_macros_summary() -> String {
         .iter()
         .map(|m| {
             let Some(macro_name) = m.labels.first().map(|l| l.as_str().to_string()) else {
-                eprintln_exit!("Broken macro block in `macro_lib.in.tf` (shouold not happen)");
+                eprintln_exit!("Broken macro block in `macro_lib.in.tf` (should not happen)");
             };
             let md = MacroDefinition::from_macro_block(&macro_name, m);
             format!("- `{}`", md.macro_call_string(&macro_name))
