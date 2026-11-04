@@ -566,10 +566,14 @@ struct Cli {
 }
 
 fn print_to_stdout(s: &str) {
-    // Use `write` instead of `println!` so that a broken pipe (when e.g. the subsequent
-    // process closes the STDIN pipe) does not cause any issue.
+    // Write directly so a downstream process closing its pipe can be handled gracefully.
     use std::io::Write;
-    let _ = std::io::stdout().write(s.as_bytes());
+    let mut stdout = std::io::stdout().lock();
+    if let Err(e) = stdout.write_all(s.as_bytes()).and_then(|_| stdout.flush()) {
+        if e.kind() != std::io::ErrorKind::BrokenPipe {
+            eprintln_exit!("Failed to write to STDOUT: {}.", e);
+        }
+    }
 }
 
 const README_CONTENT: &str = include_str!("../README.md");
