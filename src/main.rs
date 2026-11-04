@@ -188,6 +188,10 @@ impl MacroDefinition {
             });
         wrap_with_paren(new_expr)
     }
+
+    fn macro_call_string(&self, macro_name: &str) -> String {
+        format!("macro::{}({})", macro_name, self.arg_names.join(", "))
+    }
 }
 
 //
@@ -542,7 +546,7 @@ impl VisitMut for Converter {
 #[command(version)]
 struct Cli {
     /// File to preprocess using xenoform.
-    target_file: String,
+    target_file: Option<String>,
 
     /// File path to be included before processing the target file.
     ///
@@ -555,6 +559,69 @@ struct Cli {
     /// is written to STDOUT.
     #[arg(long, value_name = "FILE")]
     out: Option<String>,
+
+    /// Print a usage guide to STDOUT and exit.
+    ///
+    /// Useful (especially for AI agents) to learn xenoform's features
+    /// without consulting the xenoform documentation separately.
+    #[arg(long)]
+    guide: bool,
+
+    /// Print source code of built-in macros (including their doc comments) to STDOUT and exit.
+    ///
+    /// Useful (especially for AI agents) to learn xenoform's built-in macros
+    /// without consulting the xenoform documentation separately.
+    #[arg(long)]
+    builtin_macros: bool,
+}
+
+fn print_to_stdout(s: &str) {
+    // Write directly so a downstream process closing its pipe can be handled gracefully.
+    use std::io::Write;
+    let mut stdout = std::io::stdout().lock();
+    if let Err(e) = stdout.write_all(s.as_bytes()).and_then(|_| stdout.flush()) {
+        if e.kind() != std::io::ErrorKind::BrokenPipe {
+            eprintln_exit!("Failed to write to STDOUT: {}.", e);
+        }
+    }
+}
+
+const README_CONTENT: &str = include_str!("../README.md");
+
+fn print_guide() {
+    use clap::CommandFactory;
+    let content = [
+        README_CONTENT,
+        "## Built-in macros",
+        "",
+        "These macros are automatically available in all xenoform code.",
+        "",
+        &builtin_macros_summary(),
+        "",
+        "See the macro doc comments in output of `xenoform --builtin-macros` for the details of their behaviors.",
+        "See the README sections \"Macros\" and \"Including macros defined in other files\" for how to define your own macros and call them.",
+        "",
+        "## Command line usage (output of `xenoform --help`)",
+        "",
+        &Cli::command().render_long_help().to_string(),
+    ]
+    .join("\n");
+    print_to_stdout(&content);
+}
+
+fn builtin_macros_summary() -> String {
+    let mut body: Body = MACRO_LIB_CONTENT.parse().unwrap();
+    body.remove_blocks("macro")
+        .iter()
+        .map(|m| {
+            let Some(macro_name) = m.labels.first().map(|l| l.as_str().to_string()) else {
+                eprintln_exit!("Broken macro block in `macro_lib.in.tf` (should not happen)");
+            };
+            let md = MacroDefinition::from_macro_block(&macro_name, m);
+            format!("- `{}`", md.macro_call_string(&macro_name))
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn print_body(cli_out: &Option<String>, body: &Body) {
@@ -565,15 +632,28 @@ fn print_body(cli_out: &Option<String>, body: &Body) {
                 eprintln_exit!("Failed to write to '{}': {}.", out, e);
             }
         }
-        None => print!("{}", content),
+        None => print_to_stdout(&content),
     }
 }
 
 fn main() {
     let cli = Cli::parse();
-    let mut body = parse_file(&cli.target_file, "");
-    let macros = extract_macro_blocks(&cli.macro_prelude, &cli.target_file, &mut body);
-    let mut converter = Converter::new(&cli.target_file, macros);
+    if cli.guide {
+        print_guide();
+        return;
+    }
+    if cli.builtin_macros {
+        print_to_stdout(MACRO_LIB_CONTENT);
+        return;
+    }
+    let Some(target_file) = cli.target_file else {
+        eprintln_exit!(
+            "No target file given. See `xenoform --help` or `xenoform --guide` for usage."
+        );
+    };
+    let mut body = parse_file(&target_file, "");
+    let macros = extract_macro_blocks(&cli.macro_prelude, &target_file, &mut body);
+    let mut converter = Converter::new(&target_file, macros);
     converter.visit_body_mut(&mut body);
     print_body(&cli.out, &body);
 }
