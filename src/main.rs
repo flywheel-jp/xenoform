@@ -174,7 +174,7 @@ impl MacroDefinition {
     fn expand(&self, macro_name: &str, args: Vec<&Expression>) -> Expression {
         if self.arg_names.len() != args.len() {
             eprintln_exit!(
-                "Number of args passed to macro '{}' must be '{}'.",
+                "Number of args passed to macro '{}' must be '{}'. (should not happen because we obtain `MacroDef` based on the number of arguments passed)",
                 macro_name,
                 self.arg_names.len()
             );
@@ -224,7 +224,10 @@ fn extract_macro_blocks_impl(
         entry.insert(md);
     }
     let Some(parent_dir) = filepath.parent() else {
-        eprintln_exit!("Parent directory of {:?} not found.", filepath);
+        eprintln_exit!(
+            "Parent directory of {:?} not found. (should not happen given we already successfully read the file content as `body`)",
+            filepath
+        );
     };
     let macro_include_blocks = body.remove_blocks("macro_include");
     let mut direct_includes = HashSet::new();
@@ -302,6 +305,7 @@ struct Converter {
     blocal_expansion_counts: HashMap<String, u32>,
     macros: MacrosMap,
     macro_expansion_counts: HashMap<String, u32>,
+    toplevel: bool,
 }
 
 impl Converter {
@@ -320,6 +324,7 @@ impl Converter {
             blocal_expansion_counts: HashMap::new(),
             macros,
             macro_expansion_counts: HashMap::new(),
+            toplevel: true,
         }
     }
 
@@ -406,17 +411,22 @@ impl Converter {
 impl VisitMut for Converter {
     fn visit_block_mut(&mut self, node: &mut Block) {
         let mut clear_blocals = false;
-        match node.ident.value().as_str() {
-            "resource" | "module" => {
-                self.take_blocals_block_if_present(node);
-                clear_blocals = true;
+        if self.toplevel {
+            match node.ident.value().as_str() {
+                "resource" | "module" => {
+                    self.take_blocals_block_if_present(node);
+                    clear_blocals = true;
+                }
+                "flocals" => self.canonicalize_flocals_block(node),
+                "assert" => self.convert_assert_block(node),
+                _ => (),
             }
-            "flocals" => self.canonicalize_flocals_block(node),
-            "assert" => self.convert_assert_block(node),
-            _ => (),
         }
         // Continue tree visiting to handle other parts of AST
+        let orig_toplevel = self.toplevel;
+        self.toplevel = false;
         visit_mut::visit_block_mut(self, node);
+        self.toplevel = orig_toplevel;
         // Forget about the entries in blocals block (if any)
         if clear_blocals {
             self.blocals.clear();
@@ -482,11 +492,11 @@ impl VisitMut for Converter {
                 [ns] if ns.as_str() == "macro" => {
                     let macro_name = call.name.name.as_str();
                     if macro_name == "pipeline" {
-                        *expr = make_expr_from_call(&call, "pipeline", |_i, arg, e| {
+                        *expr = make_expr_from_call(call, "pipeline", |_i, arg, e| {
                             expand_var(arg.to_owned(), "_", &e)
                         })
                     } else if macro_name == "bind" {
-                        *expr = make_expr_from_call(&call, "bind", |i, arg, e| {
+                        *expr = make_expr_from_call(call, "bind", |i, arg, e| {
                             expand_var(e, &format!("_{}", i + 1), arg)
                         })
                     } else {
@@ -552,7 +562,7 @@ fn print_body(cli_out: &Option<String>, body: &Body) {
     match cli_out {
         Some(out) => {
             if let Err(e) = fs::write(out, content) {
-                eprintln_exit!("Failed to write to {}: {}.", out, e);
+                eprintln_exit!("Failed to write to '{}': {}.", out, e);
             }
         }
         None => print!("{}", content),

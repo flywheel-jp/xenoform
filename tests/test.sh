@@ -57,11 +57,14 @@ function success() {
 success --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf" "$(dirname "$0")/success/all_features.in.tf"
 success --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" "$(dirname "$0")/success/all_features.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf"
 success "$(dirname "$0")/success/all_features.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf"
-success "$(dirname "$0")/success/blocal/blocals_kept_after_nested_block.in.tf"
+success "$(dirname "$0")/success/local/blocals_kept_after_nested_block.in.tf"
+success "$(dirname "$0")/success/local/module_with_blocals.in.tf"
+success "$(dirname "$0")/success/local/multiple_flocals.in.tf"
 success "$(dirname "$0")/success/macro/higher_order_macro.in.tf"
 success "$(dirname "$0")/success/macro/macro_within_traversal.in.tf"
 success "$(dirname "$0")/success/macro/object_key_rewrites.in.tf"
 success "$(dirname "$0")/success/macro/same_name_different_arity.in.tf"
+success "$(dirname "$0")/success/keep_nested_flocals_and_assert_blocks.in.tf"
 
 function error() {
   local expected_exit_code="$1"
@@ -86,6 +89,7 @@ error 2 "^error: a value is required for '--macro-prelude <FILE>' but none was s
 error 1 '^Failed to read .*$' "$(dirname "$0")/error/nonexisting_file.in.tf"
 error 1 '^Failed to parse .* as HCL2\.$' "$(dirname "$0")/error/non_hcl2.in.tf"
 error 1 '^Failed to parse .*$' "$(dirname "$0")/error/blocal_duplicated_entries.in.tf" # This results in a parsing error instead of error in our code
+error 1 "^Failed to write to 'nonexisting_dir/out.tf': No such file or directory \(os error 2\)\.$" --out nonexisting_dir/out.tf --macro-prelude "$(dirname "$0")/success/macro_prelude1.in.tf" --macro-prelude "$(dirname "$0")/success/macro_prelude2.in.tf" "$(dirname "$0")/success/all_features.in.tf"
 error 1 "^'blocal\.x' not present in blocals block\.$" "$(dirname "$0")/error/blocal_different_block.in.tf"
 error 1 "^Too many expansions of blocal 'x'\.$" "$(dirname "$0")/error/blocal_self_recursive.in.tf"
 error 1 "^Too many expansions of blocal 'x'\.$" "$(dirname "$0")/error/blocal_mutual_recursive.in.tf"
